@@ -1,0 +1,180 @@
+Sub ShowUserForm()
+    UserForm1.Show
+End Sub
+
+Sub OpenWebsiteAndImport()
+    Dim importFilePath As String
+    Dim importWb As Workbook
+    Dim localWs As Worksheet
+    Dim importWs As Worksheet
+    Dim existingSheet As Worksheet
+    Dim websiteURL As String
+    Dim wsName As String
+    Dim sheetExists As Boolean
+    Dim sheetCopied As Boolean
+    Dim lastRow As Long
+
+    ' Define the URL of the page to open in Edge
+    websiteURL = "https://www.swimrankings.net/index.php?page=rankingDetail&clubId=273&gender=1&season=2024&course=LCM&agegroup=12012&stroke=10"
+
+    ' Open the website in Edge
+    Shell "cmd /c start msedge.exe """ & websiteURL & """", vbNormalFocus
+
+    ' Inform the user to interact with the webpage and generate the XLS file
+    MsgBox "Open de website in Edge, selecteer de benodigde informatie, genereer en sla het XLS-bestand op. Klik op OK wanneer u klaar bent om het bestand te importeren.", vbInformation
+
+    ' Ask the user to select the Excel file to import
+    importFilePath = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx", , "Select the XLS/XLSX file to import")
+
+    ' Check if the user canceled the file selection
+    If importFilePath = "False" Then
+        MsgBox "Geen bestand geselecteerd. Opdracht afgebroken.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Open the selected Excel file
+    On Error GoTo ErrorHandler
+    Set importWb = Workbooks.Open(importFilePath)
+
+    ' Loop through each sheet in the imported workbook
+    For Each importWs In importWb.Sheets
+        wsName = importWs.Name
+        sheetExists = False
+        sheetCopied = False
+
+        ' Check if the sheet with the same name exists in the local workbook
+        On Error Resume Next
+        Set existingSheet = ThisWorkbook.Sheets(wsName)
+        On Error GoTo 0
+
+        If Not existingSheet Is Nothing Then
+            ' If the sheet exists, clear its contents and replace with new data
+            existingSheet.Cells.Clear
+            importWs.Cells.Copy Destination:=existingSheet.Cells
+            sheetExists = True
+        End If
+
+        If Not sheetExists Then
+            ' If the sheet does not exist, copy it to the local workbook
+            importWs.Copy After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)
+            sheetCopied = True
+        End If
+    Next importWs
+
+    ' Close the imported workbook without saving
+    importWb.Close False
+
+    ' Optional: Autofit columns in each sheet
+    For Each localWs In ThisWorkbook.Sheets
+        localWs.Columns.AutoFit
+    Next localWs
+
+    ' Display completion message
+    MsgBox "Alle werkbladen zijn geïmporteerd en bijgewerkt.", vbInformation
+
+    ' Add the unique ID column to each imported sheet, except "NJK Analyse"
+    For Each localWs In ThisWorkbook.Sheets
+        If localWs.Name <> "NJK Analyse" Then
+            lastRow = localWs.Cells(localWs.Rows.Count, "F").End(xlUp).Row ' Assuming fullname is in column F and birthday is in column G
+            ' Insert a new column at A
+            localWs.Columns("A:A").Insert Shift:=xlToRight
+            ' Set the header for the new column
+            localWs.Range("A1").Value = "uniqueID"
+            ' Combine fullname (F) and birthday (G) to create uniqueID
+            localWs.Range("A2:A" & lastRow).Formula = "=F2 & ""_"" & G2"
+        End If
+    Next localWs
+
+    ' Display completion message for adding unique IDs
+    MsgBox "Unieke ID-kolommen zijn toegevoegd aan de geïmporteerde werkbladen, met uitzondering van 'NJK Analyse'.", vbInformation
+
+    Exit Sub
+
+ErrorHandler:
+    MsgBox "Fout bij het openen van het geselecteerde Excel-bestand. Controleer het bestand en probeer het opnieuw.", vbCritical
+    Exit Sub
+End Sub
+
+Sub ImportFileOnly()
+    Dim importFilePath As String
+    Dim importWb As Workbook
+    Dim localWs As Worksheet
+    Dim importWs As Worksheet
+    Dim existingSheet As Worksheet
+    Dim wsName As String
+    Dim sheetExists As Boolean
+    Dim sheetCopied As Boolean
+    Dim lastRow As Long
+
+    ' Ask the user to select the Excel file to import
+    importFilePath = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx", , "Select the XLS/XLSX file to import")
+
+    ' Check if the user canceled the file selection
+    If importFilePath = "False" Then
+        MsgBox "Geen bestand geselecteerd. Opdracht afgebroken.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Open the selected Excel file
+    On Error GoTo ErrorHandler
+    Set importWb = Workbooks.Open(importFilePath)
+
+    ' Loop through each sheet in the imported workbook
+    For Each importWs In importWb.Sheets
+        wsName = importWs.Name
+        sheetExists = False
+        sheetCopied = False
+
+        ' Check if the sheet with the same name exists in the local workbook
+        On Error Resume Next
+        Set existingSheet = ThisWorkbook.Sheets(wsName)
+        On Error GoTo 0
+
+        If Not existingSheet Is Nothing Then
+            ' If the sheet exists, clear its contents and replace with new data
+            existingSheet.Cells.Clear
+            importWs.Cells.Copy Destination:=existingSheet.Cells
+            sheetExists = True
+        End If
+
+        If Not sheetExists Then
+            ' If the sheet does not exist, copy it to the local workbook
+            importWs.Copy After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)
+            sheetCopied = True
+        End If
+    Next importWs
+
+    ' Close the imported workbook without saving
+    importWb.Close False
+
+    ' Optional: Autofit columns in each sheet
+    For Each localWs In ThisWorkbook.Sheets
+        localWs.Columns.AutoFit
+    Next localWs
+
+    ' Display completion message
+    MsgBox "Alle werkbladen zijn geïmporteerd en bijgewerkt.", vbInformation
+
+    ' Add the unique ID column to each imported sheet, except "NJK Analyse"
+    For Each localWs In ThisWorkbook.Sheets
+        If localWs.Name <> "NJK Analyse" Then
+            lastRow = localWs.Cells(localWs.Rows.Count, "F").End(xlUp).Row ' Assuming fullname is in column F and birthday is in column G
+            ' Insert a new column at A
+            localWs.Columns("A:A").Insert Shift:=xlToRight
+            ' Set the header for the new column
+            localWs.Range("A1").Value = "uniqueID"
+            ' Combine fullname (F) and birthday (G) to create uniqueID
+            localWs.Range("A2:A" & lastRow).Formula = "=F2 & ""_"" & G2"
+        End If
+    Next localWs
+
+    ' Display completion message for adding unique IDs
+    MsgBox "Unieke ID-kolommen zijn toegevoegd aan de geïmporteerde werkbladen, met uitzondering van 'NJK Analyse'.", vbInformation
+
+    Exit Sub
+
+ErrorHandler:
+    MsgBox "Fout bij het openen van het geselecteerde Excel-bestand. Controleer het bestand en probeer het opnieuw.", vbCritical
+    Exit Sub
+End Sub
+
